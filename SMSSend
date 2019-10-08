@@ -1,0 +1,86 @@
+import requests
+import xlrd, xlwt
+import time
+import random
+
+filename = 'C:\\!Scripts\\SMSsend\\kazan.xlsx'
+
+port = {
+        'User1': 1,
+        'User2': 2,
+        'User3': 4,
+        'User4': 5,
+        'User5': 8
+        }
+
+text_in_sms = {'1part': ['text1', 'text2'],
+               '2part': [''],
+               '3part': ['text1', 'text2'],
+               '4part': ['text1', 'text2'],
+               '5part': ['text1', 'text2'],
+               '6part': ['text1', 'text2'],
+               '7part': ['text1', 'text2'],
+               '8part': ['text1', 'text2']]
+               }
+
+request = 'http://[IP]/cgi/WebCGI?1500101=account=' \
+          '[AMILogin]&password=[AMIPassword]&port='
+
+
+def get_numbers_from_file(filename):
+    """Возвращает массив с номерами из файла"""
+    rb = xlrd.open_workbook(filename)
+    sheet = rb.sheet_by_index(0)
+    numbers = [sheet.row_values(rownum) for rownum in range(sheet.nrows)]
+
+    return numbers
+
+def format_number(number):
+    """Убирает из номера лишние символы и меняет +7 на 8"""
+    unnecessary_symbols = '()-  []\''
+    number = str(number).replace('+7', '8')
+
+    for char in unnecessary_symbols:
+        number = number.replace(char, "")
+
+    return str(number)
+
+def format_name(name):
+    """Из ФИО возвращает имя"""
+    name = name.split(' ')
+    name = name[1]
+
+    return str(name)
+
+def create_message(formatted_name):
+    """Возвращает сообщение, собранное случайно из словаря"""
+    message = ''
+    for words in text_in_sms:
+        text_in_sms['2part'][0] = formatted_name + ', '
+        message += random.choice(text_in_sms[words])
+    if len(message) > 180:
+        return create_message(formatted_name)
+    else:
+        return message
+
+numbers = get_numbers_from_file(filename)
+
+
+for number, name in numbers:
+
+    formatted_name = format_name(name)
+    formatted_number = format_number(number)
+    message = create_message(formatted_name)
+
+    print(len(message))
+    print(message)
+    response = requests.get(request + str(port[name]) +
+                             '&destination=' + formatted_number + '&content=' + message)
+    print(response.content)
+    # print(request + str(port[name]) + '&destination='
+    #       + formatted_number + '&content=' + message)
+
+    timer = random.randint(15, 25)
+    print('Сообщение отправлено на ' + formatted_number)
+    print('Ждём ' + str(timer) + ' секунд')
+    time.sleep(timer)
