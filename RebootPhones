@@ -44,7 +44,7 @@ def get_ip():
             print('Всего: ' + str(len(ip)))
             return ip
     except:
-        print('Command error')
+        print('Command get ip error')
 
 def command_reboot(host):
     """Подключаемся по SSH и отправляем команду перезагрузки"""
@@ -58,7 +58,7 @@ def command_reboot(host):
             result = ssh.recv(50000).decode('utf-8')
             print(result)
     except:
-        print('Command error')
+        print('Command reboot error')
 
 for i in get_ip():
     command_reboot(i)
