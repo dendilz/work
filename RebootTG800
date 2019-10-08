@@ -1,0 +1,42 @@
+#!/usr/bin/env python
+"""
+Данный скрипт необходим для перезагрузки шлюза Yeastar TG800,
+тк после перезагрузки удаляются файлы для выгрузки входящих смс,
+скрипт по SSH подключается к серверу CentOS и с него отправляет на
+шлюз необходимые файлы
+"""
+import paramiko
+import time
+import os
+
+USER = 'username'
+CENTOS_PASSWORD = 'centos password'
+TG800_PASSWORD = 'tg800 password'
+
+DEVICE_IP = 'CentOS IP'
+
+client = paramiko.SSHClient()
+client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+client.connect(hostname=DEVICE_IP, username=USER, password=CENTOS_PASSWORD,
+                   look_for_keys=False, allow_agent=False)
+
+
+with client.invoke_shell() as ssh:
+    ssh.send('ssh-copy-id -i ~/.ssh/id_rsa.pub 'tg800 login'@'tg800 ip'\n')
+    time.sleep(2)
+    ssh.send(TG800_PASSWORD + '\n')
+    time.sleep(2)
+    ssh.send('ssh 'tg800 login'@'tg800 ip' "reboot"\n')
+    time.sleep(60)
+    ssh.send('ssh-copy-id -i ~/.ssh/id_rsa.pub 'tg800 login'@'tg800 ip'\n')
+    time.sleep(5)
+    ssh.send(TG800_PASSWORD + '\n')
+    time.sleep(5)
+    ssh.send('scp ~/files_to_gsmgateway/sms.html 'tg800 login'@'tg800 ip':/www/webfile\n')
+    time.sleep(2)
+    ssh.send('scp ~/files_to_gsmgateway/sql.js 'tg800 login'@'tg800 ip':/www/webfile\n')
+    time.sleep(5)
+    ssh.send('ssh 'tg800 login'@'tg800 ip' "ln -s /persistent/var/lib/asterisk/db/MyPBX.sqlite /www/webfile/sms.sqlite"\n')
+    time.sleep(5)
+    result = ssh.recv(5000).decode('utf-8')
+    print(result)
